@@ -21,16 +21,13 @@
  *
  * -------------------------------------------------------------------
  *  REnet is a rust language wrapper for the ENet networking library
- *
- *  TODO List
  * -------------------------------------------------------------------
  */
 
-pub mod ffi;
+extern crate renet;
 
 
-pub fn linked_version() -> u32 {
-    unsafe {
-        ffi::enet_linked_version() as u32
-    }
+fn main() {
+    let v = renet::linked_version();
+    println!("the ENet library version is {}",v);
 }

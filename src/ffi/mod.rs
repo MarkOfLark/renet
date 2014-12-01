@@ -26,11 +26,14 @@
  * -------------------------------------------------------------------
  */
 
-pub mod ffi;
 
 
-pub fn linked_version() -> u32 {
-    unsafe {
-        ffi::enet_linked_version() as u32
-    }
+extern crate libc;
+
+
+#[link(name = "enet")]
+extern "C" {
+    pub fn enet_linked_version() -> libc::c_uint;
 }
+
+
