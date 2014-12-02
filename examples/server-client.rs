@@ -21,31 +21,34 @@
  *
  * -------------------------------------------------------------------
  *  REnet is a rust language wrapper for the ENet networking library
- *
- *  TODO List
  * -------------------------------------------------------------------
  */
 
+extern crate renet;
 
+fn do_networking() {
 
-extern crate libc;
+{
+    let server = match renet::Host::new("0.0.0.0:12345",32,2,0,0) {
+        Ok(s)     => s,
+        Err(desc) => { println!("ERROR: {}", desc); return; }
+    };
 
-
-#[repr(C)]
-pub struct ENetAddress {
-    pub host: libc::c_uint,
-    pub port: libc::c_ushort,
+    server.hello();
+}
 }
 
-#[link(name = "enet")]
-extern {
-    pub fn enet_initialize() -> libc::c_int;
-    pub fn enet_deinitialize();
-    pub fn enet_linked_version() -> libc::c_uint;
-    pub fn enet_host_create(address           : *const libc::c_void,
-                            peerCount         : libc::size_t,
-                            channelCount      : libc::size_t,
-                            incomingBandwidth : libc::c_uint,
-                            outgoingBandwidth : libc::c_uint) -> *mut libc::c_void;
-    pub fn enet_host_destroy(host : *mut libc::c_void);
+
+fn main() {
+    let v = renet::linked_version();
+    println!("the ENet library version is {}",v);
+
+    match renet::initialize() {
+        Ok(_)     => { println!("ENet is initialized!"); },
+        Err(code) => { println!("ENet initialize returned error code {}",code); }
+    }
+
+    do_networking();
+
+    renet::deinitialize();
 }

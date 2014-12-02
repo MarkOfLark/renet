@@ -27,6 +27,11 @@
  */
 
 extern crate libc;
+
+use libc::{c_uint,c_void,size_t};
+use std::io::net::ip::ToSocketAddr;
+use std::io::net::ip::IpAddr;
+
 pub mod ffi;
 
 
@@ -58,28 +63,53 @@ pub fn linked_version() -> u32 {
  * Host object: a wrapper around ENetHost*
  * ------------------------------------------------------------------
  */
-pub struct Host;
+pub struct Host {
+    ffi_handle : *mut c_void,
+}
 
 impl Host {
-    pub fn new<'h>(address: u32, //TODO
-                   peer_count: u32,
-                   channel_count: u32,
-                   incomming_bandwidth: u32,
-                   outgoing_bandwidth: u32)
-                   -> Result<&'h Host, &'static str>
-    {
-        let host = unsafe { ffi::enet_host_create(address as *const libc::c_void, //TODO
-                                                  peer_count as libc::size_t,
-                                                  channel_count as libc::size_t,
-                                                  incomming_bandwidth as libc::c_uint,
-                                                  outgoing_bandwidth as libc::c_uint)
-                          } as *mut Host;
+    pub fn new<A: ToSocketAddr>(address: A,
+                                   peer_count: u32,
+                                   channel_count: u32,
+                                   incomming_bandwidth: u32,
+                                   outgoing_bandwidth: u32)
+    -> Result<Host, &'static str> {
 
-        if host.is_null() { return Err("Could not initialize host"); }
-        else              { return Ok(unsafe{& *host}); }
+        let socket_addr = match address.to_socket_addr() {
+            Ok(a)      => a,
+            Err(ioerr) => return Err(ioerr.desc)
+        };
+
+        let socket_ip : u32 = match socket_addr.ip {
+            IpAddr::Ipv4Addr(a,b,c,d) => (a as u32 <<24) + (b as u32 <<16) + (c as u32 <<8) + d as u32,
+            _                         => return Err("IPv6 not currently supported")
+        };
+
+        let addr = ffi::ENetAddress{host:socket_ip, port:socket_addr.port};
+        let p_addr : *const c_void = &addr as *const _ as *const c_void;
+
+        let host = unsafe { ffi::enet_host_create(p_addr,
+                                                  peer_count as size_t,
+                                                  channel_count as size_t,
+                                                  incomming_bandwidth as c_uint,
+                                                  outgoing_bandwidth as c_uint)
+                          };
+
+        let p_host = host as *mut Host;
+
+        if p_host.is_null() { return Err("Could not initialize host"); }
+        else                { return Ok(Host{ffi_handle:host}); }
     }
 
-    pub fn drop(&mut self) {
-        //ffi::enet_host_destroy(self.ffi_handle);
+    pub fn hello(&self) {
+        println!("hi");
+    }
+}
+
+impl Drop for Host {
+    fn drop(&mut self) {
+        println!("deleting host");
+
+        unsafe { ffi::enet_host_destroy(self.ffi_handle); }
     }
 }
