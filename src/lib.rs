@@ -104,16 +104,10 @@ impl Host {
         if p_host.is_null() { return Err("Could not initialize host"); }
         else                { return Ok(Host{ffi_handle:host}); }
     }
-
-    pub fn hello(&self) {
-        println!("hi");
-    }
 }
 
 impl Drop for Host {
     fn drop(&mut self) {
-        println!("deleting host");
-
         unsafe { ffi::enet_host_destroy(self.ffi_handle); }
     }
 }
