@@ -68,25 +68,29 @@ pub struct Host {
 }
 
 impl Host {
-    pub fn new<A: ToSocketAddr>(address: A,
-                                   peer_count: u32,
-                                   channel_count: u32,
-                                   incomming_bandwidth: u32,
-                                   outgoing_bandwidth: u32)
+    pub fn new<A: ToSocketAddr>(address: Option<A>,
+                                peer_count: u32,
+                                channel_count: u32,
+                                incomming_bandwidth: u32,
+                                outgoing_bandwidth: u32)
     -> Result<Host, &'static str> {
 
-        let socket_addr = match address.to_socket_addr() {
-            Ok(a)      => a,
-            Err(ioerr) => return Err(ioerr.desc)
-        };
+        let p_addr = match address {
+            Some(addr) => {
+                let socket_addr = match addr.to_socket_addr() {
+                    Ok(a)      => a,
+                    Err(ioerr) => return Err(ioerr.desc)
+                };
 
-        let socket_ip : u32 = match socket_addr.ip {
-            IpAddr::Ipv4Addr(a,b,c,d) => (a as u32 <<24) + (b as u32 <<16) + (c as u32 <<8) + d as u32,
-            _                         => return Err("IPv6 not currently supported")
+                let socket_ip : u32 = match socket_addr.ip {
+                    IpAddr::Ipv4Addr(a,b,c,d) => (a as u32 <<24) + (b as u32 <<16) + (c as u32 <<8) + d as u32,
+                    _                         => return Err("IPv6 not currently supported")
+                };
+                let eaddr = ffi::ENetAddress{host:socket_ip, port:socket_addr.port};
+                &eaddr as *const _ as *const c_void
+            }
+            None => 0 as *const c_void
         };
-
-        let addr = ffi::ENetAddress{host:socket_ip, port:socket_addr.port};
-        let p_addr : *const c_void = &addr as *const _ as *const c_void;
 
         let host = unsafe { ffi::enet_host_create(p_addr,
                                                   peer_count as size_t,

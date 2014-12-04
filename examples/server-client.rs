@@ -26,17 +26,6 @@
 
 extern crate renet;
 
-fn do_networking() {
-
-{
-    let server = match renet::Host::new("0.0.0.0:12345",32,2,0,0) {
-        Ok(s)     => s,
-        Err(desc) => { println!("ERROR: {}", desc); return; }
-    };
-
-    server.hello();
-}
-}
 
 
 fn main() {
@@ -48,7 +37,15 @@ fn main() {
         Err(code) => { println!("ENet initialize returned error code {}",code); }
     }
 
-    do_networking();
+    let server = match renet::Host::new(Some("0.0.0.0:12345"),32,2,0,0) {
+        Ok(s)     => s,
+        Err(desc) => { println!("Server error: {}",desc); return; }
+    };
+
+    let client = match renet::Host::new(None::<&str>,1,2,57600,14400) {
+        Ok(c)     => c,
+        Err(desc) => { println!("Client error: {}",desc); return; }
+    };
 
     renet::deinitialize();
 }
