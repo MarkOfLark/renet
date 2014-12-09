@@ -28,7 +28,7 @@
 
 extern crate libc;
 
-use libc::{c_uint,c_void,size_t};
+use libc::{c_uint,c_void,size_t,c_int};
 use std::io::net::ip::ToSocketAddr;
 use std::io::net::ip::IpAddr;
 
@@ -58,14 +58,37 @@ pub fn linked_version() -> u32 {
 }
 
 
+pub struct Host {
+    ffi_handle : *mut c_void,
+}
+
+pub struct Peer {
+    ffi_handle : *mut c_void,
+}
+
+pub struct Packet {
+    data: u32,
+}
+
+/*
+ * ------------------------------------------------------------------
+ * Event: enum of event types*
+ * ------------------------------------------------------------------
+ */
+enum Event {
+    Connect(Peer,Packet),
+    Receive(Peer,Packet),
+    Disconnect(Peer),
+    None,
+}
+
+
 /*
  * ------------------------------------------------------------------
  * Host object: a wrapper around ENetHost*
  * ------------------------------------------------------------------
  */
-pub struct Host {
-    ffi_handle : *mut c_void,
-}
+
 
 impl Host {
     pub fn new<A: ToSocketAddr>(address: Option<A>,
@@ -106,9 +129,32 @@ impl Host {
     }
 
 
-    pub fn service(&self, timeout_ms: u32) -> Event {
+    pub fn service(&self, timeout_ms: u32) -> Result<Event> {
+        let mut ffi_event = ffi::ENetEvent{etype:0,peer:0,channelID:0,data:0,packet:0};
+        let mut result : c_int = -1;
         unsafe {
-            ffi::enet_host_service(self.ffi_handle,ffi_event,timeout);
+            let p_evt = &mut ffi_event as *mut _ as *mut c_void;
+            result = ffi::enet_host_service(self.ffi_handle,p_evt,timeout_ms as c_uint);
+        };
+
+        if 0 > result {
+            Err("Could not service the host")
+        }
+        else if 0 == result {
+            Ok(Event(None))
+        }
+        else {
+            match fft_event.etype {
+                ffi::ENET_EVENT_TYPE_CONNECT    => {
+                    Ok(Event(Connect(peer,packet)))
+                },
+                ffi::ENET_EVENT_TYPE_DISCONNECT => {
+                    Ok(Event(Disconnect(peer)))
+                },
+                ffi::ENET_EVENT_TYPE_RECEIVE    => {
+                    Ok(Event(Receive(peer,packet)))
+                }
+            }
         }
     }
 }
@@ -117,25 +163,4 @@ impl Drop for Host {
     fn drop(&mut self) {
         unsafe { ffi::enet_host_destroy(self.ffi_handle); }
     }
-}
-
-
-pub struct Peer {
-    address: u32,
-}
-
-
-pub struct Packet {
-    data: u32,
-}
-
-/*
- * ------------------------------------------------------------------
- * Event: enum of event types*
- * ------------------------------------------------------------------
- */
-enum Event {
-    Connect(Peer,Packet),
-    Receive(Peer,Packet),
-    Disconnect(Peer),
 }

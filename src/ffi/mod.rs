@@ -31,10 +31,23 @@
 extern crate libc;
 
 
+const ENET_EVENT_TYPE_CONNECT: libc::c_uint    = 1;
+const ENET_EVENT_TYPE_DISCONNECT: libc::c_uint = 2;
+const ENET_EVENT_TYPE_receive: libc::c_uint    = 3;
+
 #[repr(C)]
 pub struct ENetAddress {
     pub host: libc::c_uint,
     pub port: libc::c_ushort,
+}
+
+#[repr(C)]
+pub struct ENetEvent {
+    pub etype: libc::c_uint,
+    pub peer: *mut libc::c_void,
+    pub channelID: libc::c_char,
+    pub data: libc::c_uint,
+    pub packet: *mut libc::c_void,
 }
 
 #[link(name = "enet")]
@@ -47,5 +60,6 @@ extern {
                             channelCount      : libc::size_t,
                             incomingBandwidth : libc::c_uint,
                             outgoingBandwidth : libc::c_uint) -> *mut libc::c_void;
+    pub fn enet_host_service(host : *mut libc::c_void, event : *mut libc::c_void, timeout : libc::c_uint) -> libc::c_int;
     pub fn enet_host_destroy(host : *mut libc::c_void);
 }
