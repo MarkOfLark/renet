@@ -104,10 +104,38 @@ impl Host {
         if p_host.is_null() { return Err("Could not initialize host"); }
         else                { return Ok(Host{ffi_handle:host}); }
     }
+
+
+    pub fn service(&self, timeout_ms: u32) -> Event {
+        unsafe {
+            ffi::enet_host_service(self.ffi_handle,ffi_event,timeout);
+        }
+    }
 }
 
 impl Drop for Host {
     fn drop(&mut self) {
         unsafe { ffi::enet_host_destroy(self.ffi_handle); }
     }
+}
+
+
+pub struct Peer {
+    address: u32,
+}
+
+
+pub struct Packet {
+    data: u32,
+}
+
+/*
+ * ------------------------------------------------------------------
+ * Event: enum of event types*
+ * ------------------------------------------------------------------
+ */
+enum Event {
+    Connect(Peer,Packet),
+    Receive(Peer,Packet),
+    Disconnect(Peer),
 }

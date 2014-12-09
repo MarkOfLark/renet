@@ -25,7 +25,9 @@
  */
 
 extern crate renet;
+extern crate serialize;
 
+use serialize::json;
 
 fn main() {
     let v = renet::linked_version();
@@ -36,9 +38,9 @@ fn main() {
         Err(code) => { println!("ENet initialize returned error code {}",code); }
     }
 
-    server = match renet::Host::new(Some("localhost:1234"),32,2,0,0) {
+    let server = match renet::Host::new(Some("localhost:1234"),32,2,0,0) {
         Ok(s)     => s, 
-        Err(desc) => { println!("Error when trying to create server host: {}",desc); return;) }
+        Err(desc) => { println!("Error when trying to create server host: {}",desc); return; }
     };
 
     loop {

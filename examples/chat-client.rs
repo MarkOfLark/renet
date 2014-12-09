@@ -25,7 +25,10 @@
  */
 
 extern crate renet;
+extern crate serialize;
 
+use serialize::json;
+use std::io;
 
 fn main() {
     let v = renet::linked_version();
@@ -38,16 +41,16 @@ fn main() {
 
     let client = match renet::Host::new(None::<&str>,1,2,0,0) {
         Ok(s)     => s, 
-        Err(desc) => { println!("Error when trying to create client host: {}",desc); return;) }
+        Err(desc) => { println!("Error when trying to create client host: {}",desc); return; }
     };
 
     let peer = match client.connect("localhost:1234",2,None) {
         Ok(p)     => p,
-        Err(desc) => { println!("Error when trying to connect to server: {}",desc); return;) }
-    }
+        Err(desc) => { println!("Error when trying to connect to server: {}",desc); return; }
+    };
 
     loop {
-        let next_event = server.service(50000);
+        let next_event = client.service(50000);
         match next_event {
             renet::Event::Connect(peer,packet) => { 
                 println!("Connection Event: peer at address {}",peer.address);
@@ -65,7 +68,7 @@ fn main() {
         let mut reader = io::stdin();
         let input = reader.read_line().ok().expect("Failed to read line");
 
-        let packet = enet::Packet::new(json::encode(input),enet::Packet::RELIABLE).ok().expect("Could not create packet");
+        let packet = renet::Packet::new(json::encode(input),renet::Packet::RELIABLE).ok().expect("Could not create packet");
         peer.send(0,packet);
     }
 
