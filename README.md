@@ -1,4 +1,4 @@
 renet
 =====
 
-Rust bindings for ENet library
+Rust bindings for ENet  (Abandoned)
